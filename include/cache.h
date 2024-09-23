@@ -1,77 +1,36 @@
-#pragma once
-
 #include <list>
 #include <map>
 
 template <typename TYPE>
 struct cache_t {
     private:
-        std::list<TYPE> inQ ;
-        std::list<TYPE> outQ;
-        std::list<TYPE> hotQ;
-        std::map <TYPE, int> inMap;
-        std::map <TYPE, int> outMap;
-        std::map <TYPE, int> hotMap;
 
-        int inCapacity ;
-        int outCapacity;
-        int hotCapacity;
+        struct el {
+            int  lastAcc;
+            int totalAcc;
+        };
+
+        std::map<TYPE, el> cacheMap;
+
+        int capacity     = 100;
+        int accessCount = 0;
     public:
         cache_t(int cap) {
-            if (cap < 1) {
-                cap = 1;
-            }
-            switch (cap) {
-                case (1):
-                    inCapacity  = 1;
-                    outCapacity = 0;
-                    hotCapacity = 0;
-                    break;
-                case (2):
-                    inCapacity  = 2;
-                    outCapacity = 0;
-                    hotCapacity = 0;
-                    break;
-                case (3):
-                    inCapacity  = 1;
-                    outCapacity = 1;
-                    hotCapacity = 1;
-                    break;
-                default:
-                    inCapacity  = cap / 4;
-                    outCapacity = cap / 2;
-                    hotCapacity = cap - inCapacity - outCapacity;
-                    break;
-            }
+            if (cap > 0)
+                capacity = cap;
         }
 
     public:
-        cache_t() {
-            inCapacity  = 1;
-            outCapacity = 2;
-            hotCapacity = 1;
-        }
+        cache_t() {}
 
     public:
-        // if elem was found in cache than returns true
+        // if elem was found in cache, then returns true
         // if elem was not found in cache than returns false
         bool touchElem(TYPE elem) {
-            if (inMap.find(elem) != inMap.end()) {
-                return true;
-            }
-            if (outMap.find(elem) != outMap.end()) {
-                outQ.remove(elem);
-                outMap.erase(elem);
-
-                hotQ.push_front(elem);
-                hotMap[elem] = 1;
-                if (hotQ.size() > hotCapacity ) {
-                    hotMap.erase(hotQ.back());
-                    hotQ.pop_back();
-                }
-                return true;
-            }
-            if (hotMap.find(elem) != hotMap.end()) {
+            if (cacheMap.count(elem)) {
+                accessCount++;
+                cacheMap[elem].totalAcc += 1;
+                cacheMap[elem].lastAcc  = accessCount;
                 return true;
             }
             return false;
@@ -79,23 +38,30 @@ struct cache_t {
 
     public:
         // add an element into cache
+        // delete extra elements if needed
         void addElem(TYPE elem) {
-            inQ.push_front(elem);
-            inMap[elem] = 1;
-
-            if (inQ.size() > inCapacity) {
-                TYPE tmp = inQ.back();
-                inQ.pop_back();
-                inMap.erase(tmp);
-
-                outQ.push_front(tmp);
-                outMap[tmp] = 1;
-
-                if (outQ.size() > outCapacity) {
-                    outMap.erase(outQ.back());
-                    outQ.pop_back();
-                }
+            if (touchElem(elem)) {
+                return;
             }
+
+            while (cacheMap.size() >= capacity) {
+                TYPE deleteElem;
+                int minDeleteVal = INT_MAX;
+                int lastAccess   = INT_MAX;
+                for (auto it = cacheMap.begin(); it != cacheMap.end(); it++) {
+                    if ((minDeleteVal > it->second.totalAcc) ||
+                        (minDeleteVal == it->second.totalAcc && lastAccess > it->second.lastAcc)) {
+                        deleteElem = it->first;
+                        minDeleteVal = it->second.totalAcc;
+                        lastAccess = it->second.lastAcc;
+                    }
+                }
+                cacheMap.erase(deleteElem);
+            }
+            accessCount++;
+            cacheMap[elem].totalAcc = 1;
+            cacheMap[elem].lastAcc  = accessCount;
+
         }
 
 };
