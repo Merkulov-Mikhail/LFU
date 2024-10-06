@@ -45,7 +45,7 @@ int main(int argc, const char* argv[]) {
 
 void basicTests() {
 
-    cache_t<int>cache(3);
+    caches::lfu_t<int>cache(3);
 
     assert(cache.touchElem(50) == false);
     cache.addElem(49);
@@ -92,7 +92,7 @@ int fileTest(const char* fileName) {
     int ans = 0;
     std::cin >> cacheSize >> nElems;
 
-    cache_t<int>Cache(cacheSize);
+    caches::lfu_t<int>Cache(cacheSize);
 
     int current = 0;
     for ( ; nElems; nElems-- ) {
